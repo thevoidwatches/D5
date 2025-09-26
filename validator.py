@@ -4,7 +4,7 @@ from transformers import T5ForConditionalGeneration, T5Tokenizer
 from typing import List, Dict
 from tqdm import trange
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = 'cuda' if torch.cuda.is_available() else 'mps:0' if torch.mps.is_available() else 'cpu'
 BATCH_SIZE = 32
 sm = torch.nn.Softmax(dim=-1)
 MAX_TARGET_LENGTH = 2
@@ -16,8 +16,10 @@ TEMPERATURE = 0.001
 # future packages version will probably have more efficient ways to do this
 def parallelize_across_device(model):
     num_heads = len(model.encoder.block)
-    num_device = torch.cuda.device_count()
-    other_device_alloc = num_heads // num_device + 1
+    num_device = torch.cuda.device_count() if torch.cuda.is_available() else 0
+    if num_device == 0 and torch.mps.is_available():
+        num_device = torch.mps.device_count()
+    other_device_alloc = num_heads // num_device + 1 if num_device else 1
     first_device = num_heads - (num_device - 1) * other_device_alloc
     device_map = {}
     cur = 0
@@ -43,7 +45,7 @@ class Validator:
         print('loading model weights')
         self.model = T5ForConditionalGeneration.from_pretrained(model_path)
         print('done')
-        parallelize_across_device(self.model)
+        # parallelize_across_device(self.model)
         self.validator_template = template
         self.batch_size = batch_size
         self.verbose = verbose
@@ -74,7 +76,8 @@ class Validator:
                                     max_length=MAX_SOURCE_LENGTH,
                                     truncation=True,
                                     ).to(device)
-                generation_result = self.model.generate(
+                model=self.model.to(device)
+                generation_result = model.generate(
                     input_ids=inputs["input_ids"],
                     attention_mask=inputs["attention_mask"],
                     do_sample=True,
@@ -104,7 +107,7 @@ if __name__ == '__main__':
         {'hypothesis': 'is a positive review', 'text': 'I hate this movie.'}
     ]
     input_dicts = input_dicts * 100
-    validator = Validator('../workflow/mount/models/0221distill_verifier_google-flan-t5-xl/checkpoint-10000/')
+    validator = Validator() #'../workflow/mount/models/0221distill_verifier_google-flan-t5-xl/checkpoint-10000/')
     all_results = []
     for s in validator.validate_w_scores(input_dicts):
         all_results.append(s)

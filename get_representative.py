@@ -28,7 +28,7 @@ if DEBUG:
     NUM_STEPS = 300
     NUM_FOLD = 2
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda" if torch.cuda.is_available() else "mps:0" if torch.mps.is_available() else "cpu"
 pretrain_model = "roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(pretrain_model)
 lsm = torch.nn.LogSoftmax(dim=-1)

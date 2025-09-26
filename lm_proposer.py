@@ -1,7 +1,6 @@
-
 from transformers import AutoTokenizer
 import nltk
-import openai
+from openai import OpenAI
 import pickle as pkl
 import random
 import numpy as np
@@ -10,8 +9,7 @@ import os
 from typing import Dict, List
 import time
 
-openai.api_key = os.environ['openai_key']
-
+client = OpenAI(api_key=os.environ['openai_key'])
 
 GPT3_TOK = AutoTokenizer.from_pretrained('gpt2-medium')
 SINGLE_SAMPLE_MAX_LENGTH = 256
@@ -69,10 +67,10 @@ def convert_cmp_to_ind(s: str) -> str:
         if not classify_cmp(s):
             break
         prompt = rm_cmp_prompt.format(input=s)
-        response = gpt3wrapper(prompt=prompt, max_tokens=2048, temperature=0.0, top_p=1, frequency_penalty=0.0, presence_penalty=0.0, stop=['\n\n'], engine='text-davinci-002')
+        response = gpt3wrapper(prompt=prompt, max_tokens=2048, temperature=0.0, top_p=1, frequency_penalty=0.0, presence_penalty=0.0, stop=['\n\n'], model='davinci-002')
         if response is None:
             return s
-        s = response['choices'][0]['text'].strip()
+        s = response.choices[0].text.strip()
     if classify_cmp(s) or 'group a' in s.lower() or 'group b' in s.lower():
         return None
     return s
@@ -83,7 +81,7 @@ def gpt3wrapper(max_repeat=20, **arguments):
     i = 0
     while i < max_repeat:
         try:
-            response = openai.Completion.create(**arguments)
+            response = client.completions.create(**arguments)
             return response
         except KeyboardInterrupt:
             raise KeyboardInterrupt
@@ -98,18 +96,18 @@ def gpt3wrapper(max_repeat=20, **arguments):
 
 class GPT3_Proposer:
 
-    def __init__(self, problem, use_default_hypotheses=False, single_max_length=SINGLE_SAMPLE_MAX_LENGTH, engine_name='text-davinci-003', temperature=0.7):
+    def __init__(self, problem, use_default_hypotheses=False, single_max_length=SINGLE_SAMPLE_MAX_LENGTH, engine_name='davinci-002', temperature=0.7):
         if use_default_hypotheses:
             self.example_hypotheses = DEFAULT_HYPOTHESES
         else:
             self.example_hypotheses = (problem['example_hypotheses'] + DEFAULT_HYPOTHESES)[:3]
-        
+
         self.problem = problem
         self.prompt_template = open('templates/gpt3_proposer.txt', 'r').read()
         self.single_max_length = single_max_length
         self.engine_name = engine_name
         self.temperature = temperature
-    
+
     def propose_hypotheses(self, X_A: List[str], X_B: List[str]):
         X_A = [prefix_subspan(x) for x in X_A]
         X_B = [prefix_subspan(x) for x in X_B]
@@ -126,7 +124,7 @@ class GPT3_Proposer:
         while num_incontext_samples > 1:
 
             sent_subset = construct_blocks(X_A, X_B, num_incontext_samples=num_incontext_samples)
-            
+
             A_block, B_block = sent_subset['A_block'], sent_subset['B_block']
             tmp_arg_dict = deepcopy(arg_dict)
             tmp_arg_dict['A_block'] = A_block
@@ -145,7 +143,7 @@ class GPT3_Proposer:
         prompt = self.prompt_template.format(**arg_dict)
 
         query_args = {
-            'engine': self.engine_name,
+            'model': self.engine_name,
             'prompt': prompt,
             'temperature': self.temperature,
             'max_tokens': 512,
@@ -155,7 +153,7 @@ class GPT3_Proposer:
 
         result = gpt3wrapper(**query_args)
 
-        returned_text = result['choices'][0]['text']
+        returned_text = result.choices[0].text
 
         hs = []
         for h in returned_text.split('\n\n')[0].split('\n-'):
