@@ -169,7 +169,7 @@ class GPT3_Proposer:
 
         returned_text = result.response
         # returned_text = result.choices[0].text
-        print(f'propose_hypotheses: {returned_text}')
+        # print(f'propose_hypotheses: {returned_text}')
 
         hs = []
         for h in returned_text.split('\n\n')[0].split('\n-'):
