@@ -9,7 +9,9 @@ import os
 from typing import Dict, List
 import time
 
-client = OpenAI(api_key=os.environ['openai_key'])
+from ollama import generate
+
+# client = OpenAI(api_key=os.environ['openai_key'])
 
 GPT3_TOK = AutoTokenizer.from_pretrained('gpt2-medium')
 SINGLE_SAMPLE_MAX_LENGTH = 256
@@ -67,10 +69,12 @@ def convert_cmp_to_ind(s: str) -> str:
         if not classify_cmp(s):
             break
         prompt = rm_cmp_prompt.format(input=s)
-        response = gpt3wrapper(prompt=prompt, max_tokens=2048, temperature=0.0, top_p=1, frequency_penalty=0.0, presence_penalty=0.0, stop=['\n\n'], model='davinci-002')
+        response = gpt3wrapper(prompt=prompt, options={'num_predict': 2048, 'temperature': 0.0, 'top_p': 1, 'repeat_penalty': 0.0}, model='gemma3', stream=False)
+        # response = gpt3wrapper(prompt=prompt, max_tokens=2048, temperature=0.0, top_p=1, frequency_penalty=0.0, presence_penalty=0.0, stop=['\n\n'], model='davinci-002')
         if response is None:
             return s
-        s = response.choices[0].text.strip()
+        s = response['response'].strip()
+        # s = response.choices[0].text.strip()
     if classify_cmp(s) or 'group a' in s.lower() or 'group b' in s.lower():
         return None
     return s
@@ -81,7 +85,9 @@ def gpt3wrapper(max_repeat=20, **arguments):
     i = 0
     while i < max_repeat:
         try:
-            response = client.completions.create(**arguments)
+            response = generate(**arguments)
+            # response = client.completions.create(**arguments)
+            # print(f'gpt3wrapper: {response}')
             return response
         except KeyboardInterrupt:
             raise KeyboardInterrupt
@@ -143,17 +149,27 @@ class GPT3_Proposer:
         prompt = self.prompt_template.format(**arg_dict)
 
         query_args = {
-            'model': self.engine_name,
+            # 'model': self.engine_name,
             'prompt': prompt,
-            'temperature': self.temperature,
-            'max_tokens': 512,
-            'top_p': 1,
-            'n': 1
+            # 'temperature': self.temperature,
+            # 'max_tokens': 512,
+            # 'top_p': 1,
+            # 'n': 1
+            'options': {
+                'num_predict': 2048,
+                'temperature': 0.0,
+                'top_p': 1,
+                'repeat_penalty': 0.0
+                # 'stop': ['\n\n']
+            },
+            'model': 'gemma3',
+            'stream': False
         }
-
         result = gpt3wrapper(**query_args)
 
-        returned_text = result.choices[0].text
+        returned_text = result.response
+        # returned_text = result.choices[0].text
+        print(f'propose_hypotheses: {returned_text}')
 
         hs = []
         for h in returned_text.split('\n\n')[0].split('\n-'):
@@ -162,6 +178,17 @@ class GPT3_Proposer:
                 if h[-1] == '.':
                     h = h[:-1]
                 hs.append(h)
+        for h in returned_text.split('\n'):
+            # print(f"Split from text:{h}")
+            if not h:
+                continue
+            elif h[0] == '*':
+                # print(f'h: {h}')
+                h = convert_cmp_to_ind(h.replace('"', '').replace('*', '').strip())
+                if h is not None and len(h) > 0:
+                    if h[-1] == '.':
+                        h = h[:-1]
+                    hs.append(h)
 
         return {
             'hypotheses': hs,
