@@ -96,7 +96,7 @@ if __name__ == "__main__":
             counter += 1
 
         # Store average similarity
-        avg_sim = float(np.mean(similarities))
+        avg_sim = float(np.mean(all_similarities))
         avg_similarities[base_name] = avg_sim
 
     # Generate final bar chart of average similarities
