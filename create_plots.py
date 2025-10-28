@@ -3,7 +3,9 @@ import os
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.spatial.distance import cosine
 import tqdm
+import pandas as pd
 
 PROBLEMS_FOLDER = "./problem_output"
 EMBEDDINGS_FOLDER = "./problem_embeddings"
@@ -16,8 +18,15 @@ def load_pickle(path):
 
 def euclidean_similarity(vec1, vec2):
     """Compute inverted Euclidean similarity (larger = more similar)."""
-    distance = np.linalg.norm(vec1 - vec2)
-    return 1 / (1 + distance)
+    # distance = np.linalg.norm(vec1 - vec2)
+    distance = vec1.transpose().dot(vec2)
+    return distance
+
+def cosine_similarity(vec1, vec2, Rhx0):
+    """Compute cosine similarity between the difference between two vectors and a given angle, Rhx0):"""
+    diff = vec1 - vec2
+    similarity = 1 - cosine(Rhx0, diff)
+    return similarity
 
 if __name__ == "__main__":
     avg_similarities = {}
@@ -48,7 +57,8 @@ if __name__ == "__main__":
         out_dir = os.path.join(OUTPUT_FOLDER, base_name)
         os.makedirs(out_dir, exist_ok=True)
 
-        all_similarities = []
+        high_similarities = []
+        low_similarities = []
 
         counter = 0
         for hypothesis in problem_data:
@@ -66,16 +76,26 @@ if __name__ == "__main__":
             scores = []
             similarities = []
 
+            best_score = max(sample2score.items(), key=lambda item: item[1])
+            best_score_emb = np.array(embedding_data[best_score[0]])
+            Rhx0 = hypothesis_emb - best_score_emb
+
             # Compute similarity for each sample
             for sample, score in sample2score.items():
                 if sample not in embedding_data:
                     print(f"Missing sample '''{sample}'''")
                     continue  # skip missing samples
+                if score == best_score[1] and sample == best_score[0]:
+                    continue # skip the sample chosen as the best
 
                 sample_emb = np.array(embedding_data[sample])
-                sim = euclidean_similarity(hypothesis_emb, sample_emb)
+#                sim = euclidean_similarity(hypothesis_emb, sample_emb)
+                sim = cosine_similarity(hypothesis_emb, sample_emb, Rhx0)
                 similarities.append(sim)
-                all_similarities.append(sim)
+                if score >= 0.5:
+                    high_similarities.append(sim)
+                else:
+                    low_similarities.append(sim)
                 scores.append(score)
 
             if not similarities:
@@ -85,9 +105,9 @@ if __name__ == "__main__":
             # Scatter plot: sample2score vs embedding similarity
             plt.figure(figsize=(8, 6))
             plt.scatter(scores, similarities, alpha=0.6)
-            plt.title(f"Score vs Embedding Similarity — {base_name}")
+            plt.title(f"Score vs Embedding Similarity : {base_name}")
             plt.xlabel("Sample2Score (higher = more similar)")
-            plt.ylabel("Embedding Similarity (1 / (1 + distance))")
+            plt.ylabel("Cosine Distance")
             plt.grid(True, alpha=0.3)
             plt.tight_layout()
             plt.savefig(os.path.join(out_dir, f"scatter_[{counter}].png"))
@@ -95,9 +115,12 @@ if __name__ == "__main__":
 
             counter += 1
 
-        # Store average similarity
-        avg_sim = float(np.mean(all_similarities))
-        avg_similarities[base_name] = avg_sim
+        # Store average similarities
+        avg_high_sim = float(np.mean(high_similarities))
+        avg_low_sim = float(np.mean(low_similarities))
+        avg_similarities[f"{base_name}_hi"] = avg_high_sim
+        avg_similarities[f"{base_name}_lo"] = avg_low_sim
+
 
     # Generate final bar chart of average similarities
     if avg_similarities:
@@ -105,8 +128,8 @@ if __name__ == "__main__":
         names = list(avg_similarities.keys())
         values = list(avg_similarities.values())
         plt.bar(names, values)
-        plt.title("Average Embedding Similarity per Problem File")
-        plt.ylabel("Average Similarity (1 / (1 + distance))")
+        plt.title("Average Embedding Similarity per Problem File (split by score val)")
+        plt.ylabel("Average Similarity")
         plt.xticks(rotation=45, ha="right")
         plt.tight_layout()
         plt.savefig(os.path.join(OUTPUT_FOLDER, "average_similarities.png"))
