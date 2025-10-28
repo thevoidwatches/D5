@@ -75,17 +75,21 @@ if __name__ == "__main__":
 
             scores = []
             similarities = []
-
-            best_score = max(sample2score.items(), key=lambda item: item[1])
-            best_score_emb = np.array(embedding_data[best_score[0]])
-            Rhx0 = hypothesis_emb - best_score_emb
+            
+            good_scores = [(i, s) for (i, s) in sample2score.items() if s > 0.5]
+            if len(good_scores):
+                base_score = min(good_scores, key=lambda item: item[1])
+            else:
+                base_score = max(sample2score.items(), key=lambda item: item[1])
+            base_score_emb = np.array(embedding_data[base_score[0]])
+            Rhx0 = hypothesis_emb - base_score_emb
 
             # Compute similarity for each sample
             for sample, score in sample2score.items():
                 if sample not in embedding_data:
                     print(f"Missing sample '''{sample}'''")
                     continue  # skip missing samples
-                if score == best_score[1] and sample == best_score[0]:
+                if score == base_score[1] and sample == base_score[0]:
                     continue # skip the sample chosen as the best
 
                 sample_emb = np.array(embedding_data[sample])
