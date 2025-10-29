@@ -24,9 +24,9 @@ def euclidean_similarity(vec1, vec2):
 
 def cosine_similarity(vec1, vec2, Rhx0):
     """Compute cosine similarity between the difference between two vectors and a given angle, Rhx0):"""
-    #diff = vec1 - vec2
-    #similarity = 1 - cosine(Rhx0, diff)
-    return cosine(vec1, vec2) #similarity
+    diff = vec1 - vec2
+    similarity = 1 - cosine(Rhx0, diff)
+    return similarity
 
 if __name__ == "__main__":
     avg_similarities = {}
