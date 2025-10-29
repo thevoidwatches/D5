@@ -24,9 +24,9 @@ def euclidean_similarity(vec1, vec2):
 
 def cosine_similarity(vec1, vec2, Rhx0):
     """Compute cosine similarity between the difference between two vectors and a given angle, Rhx0):"""
-    diff = vec1 - vec2
-    similarity = 1 - cosine(Rhx0, diff)
-    return similarity
+    #diff = vec1 - vec2
+    #similarity = 1 - cosine(Rhx0, diff)
+    return cosine(vec1, vec2) #similarity
 
 if __name__ == "__main__":
     avg_similarities = {}
@@ -76,11 +76,11 @@ if __name__ == "__main__":
             scores = []
             similarities = []
             
-            good_scores = [(i, s) for (i, s) in sample2score.items() if s > 0.5]
-            if len(good_scores):
-                base_score = min(good_scores, key=lambda item: item[1])
-            else:
-                base_score = max(sample2score.items(), key=lambda item: item[1])
+#            good_scores = [(i, s) for (i, s) in sample2score.items() if s > 0.5]
+ #           if len(good_scores):
+  #              base_score = min(good_scores, key=lambda item: item[1])
+   #         else:
+            base_score = max(sample2score.items(), key=lambda item: item[1])
             base_score_emb = np.array(embedding_data[base_score[0]])
             Rhx0 = hypothesis_emb - base_score_emb
 
