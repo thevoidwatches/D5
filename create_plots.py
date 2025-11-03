@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial.distance import cosine
 import tqdm
 import pandas as pd
+from sklearn.manifold import TSNE
 
 PROBLEMS_FOLDER = "./problem_output"
 EMBEDDINGS_FOLDER = "./problem_embeddings"
@@ -27,6 +28,71 @@ def cosine_similarity(vec1, vec2, Rhx0):
     diff = vec1 - vec2
     similarity = 1 - cosine(Rhx0, diff)
     return similarity
+
+def plot_RH_map(Rh_scores, sample2score, best_score_text, output_path):
+    """
+    Creates a 2D TSNE plot of Rh scores, color-coded by whether the sample2score
+    is above or below 0.5. Rhx0 is shown as a red start.
+    """
+
+    # Extract embedding matrix and labels
+    texts = []
+    vectors = []
+    colors = []
+    labels = []
+
+    for sample, emb in Rh_scores.items():
+        if not isinstance(emb, np.ndarray):
+            continue
+        texts.append(sample)
+        vectors.append(emb)
+
+        # Assign color/label
+        if sample == best_score_text:
+            labels.append("best score")
+            colors.append("red")
+        elif sample in sample2score:
+            score = sample2score[sample]
+            if score >= 0.5:
+                labels.append("score >= 0.5")
+                colors.append("orange")
+            else:
+                labels.append("score < 0.5")
+                colors.append("blue")
+        else:
+            labels.append("unscored")
+            colors.append("gray")
+
+    if not vectors:
+        print(f"No valid embeddings to plot at {output_path}")
+        return
+
+    X = np.vstack(vectors)
+
+    # Dimensionality reduction to 2D
+    reducer = TSNE(n_components=2, random_state=42, init="random", perplexity=20)
+    X_embedded = reducer.fit_transform(X)
+
+    # Plot
+    plt.figure(figsize=(8, 6))
+    for i, (x, y) in enumerate(X_embedded):
+        plt.scatter(x, y, color=colors[i], alpha=0.7, label=labels[i] if labels[i] == "hypothesis" else "")
+        if labels[i] == "hypothesis":
+            plt.text(x + 0.01, y + 0.01, "HYPOTHESIS", color="red", fontsize=9, weight="bold")
+
+    plt.title("Rh Map (TSNE)")
+    plt.axis("off")
+
+    # Create a legend (unique labels only)
+    unique_labels = list(dict.fromkeys(labels))
+    handles = [plt.Line2D([0], [0], marker='o', color='w',
+                          label=l, markerfacecolor=c, markersize=8)
+               for l, c in zip(unique_labels, dict(zip(unique_labels, colors)).values())]
+    plt.legend(handles=handles, loc="best")
+    plt.tight_layout()
+
+    plt.savefig(output_path)
+    plt.close()
 
 if __name__ == "__main__":
     avg_similarities = {}
@@ -83,6 +149,7 @@ if __name__ == "__main__":
             base_score = max(sample2score.items(), key=lambda item: item[1])
             base_score_emb = np.array(embedding_data[base_score[0]])
             Rhx0 = hypothesis_emb - base_score_emb
+            rh_dict = {}
 
             # Compute similarity for each sample
             for sample, score in sample2score.items():
@@ -101,10 +168,13 @@ if __name__ == "__main__":
                 else:
                     low_similarities.append(sim)
                 scores.append(score)
+                rh_dict[sample] = sample_emb
 
             if not similarities:
                 print(f"No valid samples for {base_name}.")
                 continue
+
+            plot_RH_map(rh_dict, sample2score, base_score[0], os.path.join(out_dir, f"TSNE_[{counter}].png"))
 
             # Scatter plot: sample2score vs embedding similarity
             plt.figure(figsize=(8, 6))
