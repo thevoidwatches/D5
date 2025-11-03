@@ -50,18 +50,15 @@ def plot_RH_map(Rh_scores, sample2score, best_score_text, output_path):
         # Assign color/label
         if sample == best_score_text:
             labels.append("best score")
-            colors.append("red")
+            colors.append("blue")
         elif sample in sample2score:
             score = sample2score[sample]
             if score >= 0.5:
                 labels.append("score >= 0.5")
-                colors.append("orange")
+                colors.append("green")
             else:
                 labels.append("score < 0.5")
-                colors.append("blue")
-        else:
-            labels.append("unscored")
-            colors.append("gray")
+                colors.append("red")
 
     if not vectors:
         print(f"No valid embeddings to plot at {output_path}")
@@ -77,10 +74,10 @@ def plot_RH_map(Rh_scores, sample2score, best_score_text, output_path):
     plt.figure(figsize=(8, 6))
     for i, (x, y) in enumerate(X_embedded):
         plt.scatter(x, y, color=colors[i], alpha=0.7, label=labels[i] if labels[i] == "hypothesis" else "")
-        if labels[i] == "hypothesis":
-            plt.text(x + 0.01, y + 0.01, "HYPOTHESIS", color="red", fontsize=9, weight="bold")
+        if labels[i] == "best score":
+            plt.text(x + 0.01, y + 0.01, "BEST SCORE", color="blue", fontsize=9, weight="bold")
 
-    plt.title("Rh Map (TSNE)")
+    plt.title("Embeddings Map (TSNE)")
     plt.axis("off")
 
     # Create a legend (unique labels only)
@@ -168,7 +165,7 @@ if __name__ == "__main__":
                 else:
                     low_similarities.append(sim)
                 scores.append(score)
-                rh_dict[sample] = sample_emb
+                rh_dict[sample] = (hypothesis_emb - sample_emb)
 
             if not similarities:
                 print(f"No valid samples for {base_name}.")
@@ -194,7 +191,6 @@ if __name__ == "__main__":
         avg_low_sim = float(np.mean(low_similarities))
         avg_similarities[f"{base_name}_hi"] = avg_high_sim
         avg_similarities[f"{base_name}_lo"] = avg_low_sim
-
 
     # Generate final bar chart of average similarities
     if avg_similarities:
