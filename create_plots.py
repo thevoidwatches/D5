@@ -29,7 +29,7 @@ def cosine_similarity(vec1, vec2, Rhx0):
     similarity = 1 - cosine(Rhx0, diff)
     return similarity
 
-def plot_RH_map(Rh_scores, sample2score, best_score_text, output_path):
+def plot_RH_map(Rh_scores, sample2score, best_score_text, output_path, hyp_label):
     """
     Creates a 2D TSNE plot of Rh scores, color-coded by whether the sample2score
     is above or below 0.5. Rhx0 is shown as a red start.
@@ -73,18 +73,19 @@ def plot_RH_map(Rh_scores, sample2score, best_score_text, output_path):
     # Plot
     plt.figure(figsize=(8, 6))
     for i, (x, y) in enumerate(X_embedded):
-        plt.scatter(x, y, color=colors[i], alpha=0.7, label=labels[i] if labels[i] == "hypothesis" else "")
+        plt.scatter(x, y, color=colors[i], alpha=0.7, label=labels[i] if labels[i] == "best score" else "")
         if labels[i] == "best score":
             plt.text(x + 0.01, y + 0.01, "BEST SCORE", color="blue", fontsize=9, weight="bold")
 
-    plt.title("Embeddings Map (TSNE)")
+    plt.title(f"Embeddings Map (TSNE) {hyp_label}")
     plt.axis("off")
 
     # Create a legend (unique labels only)
     unique_labels = list(dict.fromkeys(labels))
+    unique_colors = list(dict.fromkeys(colors))
     handles = [plt.Line2D([0], [0], marker='o', color='w',
                           label=l, markerfacecolor=c, markersize=8)
-               for l, c in zip(unique_labels, dict(zip(unique_labels, colors)).values())]
+               for l, c in zip(unique_labels, dict(zip(unique_labels, unique_colors)).values())]
     plt.legend(handles=handles, loc="best")
     plt.tight_layout()
 
@@ -171,7 +172,7 @@ if __name__ == "__main__":
                 print(f"No valid samples for {base_name}.")
                 continue
 
-            plot_RH_map(rh_dict, sample2score, base_score[0], os.path.join(out_dir, f"TSNE_[{counter}].png"))
+            plot_RH_map(rh_dict, sample2score, base_score[0], os.path.join(out_dir, f"TSNE_[{counter}].png"), hypothesis_text)
 
             # Scatter plot: sample2score vs embedding similarity
             plt.figure(figsize=(8, 6))
