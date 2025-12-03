@@ -138,19 +138,19 @@ if __name__ == '__main__':
 #	run it
 #	plot the results
         model.fit(X, Y1)
-        Y1 = model.transduction_
-        p1, r1, _ = precision_recall_curve(Y0, Y1)
-        avg1 = average_precision_score(Y0, Y1)
+        Y1_score = model.label_distributions_[:, 1]
+        p1, r1, _ = precision_recall_curve(Y0, Y1_score)
+        avg1 = average_precision_score(Y0, Y1_score)
 
         model.fit(X, Y5)
-        Y5 = model.transduction_
-        p5, r5, _ = precision_recall_curve(Y0, Y5)
-        avg5 = average_precision_score(Y0, Y5)
+        Y5_score = model.label_distributions_[:, 1]
+        p5, r5, _ = precision_recall_curve(Y0, Y5_score)
+        avg5 = average_precision_score(Y0, Y5_score)
 
         model.fit(X, Y10)
-        Y10 = model.transduction_
-        p10, r10, _ = precision_recall_curve(Y0, Y10)
-        avg10 = average_precision_score(Y0, Y10)
+        Y10_score = model.label_distributions_[:, 1]
+        p10, r10, _ = precision_recall_curve(Y0, Y10_score)
+        avg10 = average_precision_score(Y0, Y10_score)
 
         plt.figure(figsize=(8, 6))
         plt.plot(r1, p1, label=f"1% Labeled (AP={avg1:.3f})")
