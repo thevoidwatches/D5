@@ -84,43 +84,69 @@ def prepare_data(hypothesis: dict):
         X.append(embeds[key])
         Y0.append(round(value))
 
+    fifty_per_len = round(len(X) * 0.5)
+    twentyfive_per_len = round(len(X) * 0.25)
     ten_per_len = round(len(X) * 0.1)
     five_per_len = round(len(X) * 0.05)
     one_per_len = round(len(X) * 0.01)
 
+    fifty_per_indices = set()
+    twentyfive_per_indices = set()
     ten_per_indices = set()
     five_per_indices = set()
     one_per_indices = set()
     # sets that will be used to track what indexes are used
-    while len(ten_per_indices) <= ten_per_len:
+    while len(fifty_per_indices) <= fifty_per_len:
         new_index = random.randint(0, len(Y0))
-        ten_per_indices.add(new_index)
-        if len(five_per_indices) <= five_per_len:
-            five_per_indices.add(new_index)
-            if len(one_per_indices) <= one_per_len:
-                one_per_indices.add(new_index)
+        fifty_per_indices.add(new_index)
+        if len(twentyfive_per_indices) <= twentyfive_per_len:
+            twentyfive_per_indices.add(new_index)
+            if len(ten_per_indices) <= ten_per_len:
+                ten_per_indices.add(new_index)
+                if len(five_per_indices) <= five_per_len:
+                    five_per_indices.add(new_index)
+                    if len(one_per_indices) <= one_per_len:
+                        one_per_indices.add(new_index)
 
+    Y50 = []
+    Y25 = []
     Y10 = []
     Y5 = []
     Y1 = []
     for i in range(len(Y0)):
+        val = Y0[i]
         if i in one_per_indices:
-            Y1.append(Y0[i])
-            Y5.append(Y0[i])
-            Y10.append(Y0[i])
+            Y1.append(val)
+            Y5.append(val)
+            Y10.append(val)
+            Y25.append(val)
+            Y50.append(val)
         else:
             Y1.append(-1)
             if i in five_per_indices:
-                Y5.append(Y0[i])
-                Y10.append(Y0[i])
+                Y5.append(val)
+                Y10.append(val)
+                Y25.append(val)
+                Y50.append(val)
             else:
                 Y5.append(-1)
                 if i in ten_per_indices:
-                    Y10.append(Y0[i])
+                    Y10.append(val)
+                    Y25.append(val)
+                    Y50.append(val)
                 else:
                     Y10.append(-1)
+                    if i in twentyfive_per_indices:
+                        Y25.append(val)
+                        Y50.append(val)
+                    else:
+                        Y25.append(-1)
+                        if i in fifty_per_indices:
+                            Y50.append(val)
+                        else:
+                            Y50.append(-1)
 
-    return (X, Y0, Y1, Y5, Y10)
+    return (X, Y0, Y1, Y5, Y10, Y25, Y50)
 
 if __name__ == '__main__':
 # get args
@@ -133,7 +159,7 @@ if __name__ == '__main__':
     for hyp in data:
 # for each hypothesis in the data file
 #   prepare the data (func)
-        X, Y0, Y1, Y5, Y10 = prepare_data(hyp)
+        X, Y0, Y1, Y5, Y10, Y25, Y50 = prepare_data(hyp)
 #	fit the model
 #	run it
 #	plot the results
@@ -152,10 +178,22 @@ if __name__ == '__main__':
         p10, r10, _ = precision_recall_curve(Y0, Y10_score)
         avg10 = average_precision_score(Y0, Y10_score)
 
+        model.fit(X, Y25)
+        Y25_score = model.label_distributions_[:, 1]
+        p25, r25, _ = precision_recall_curve(Y0, Y25_score)
+        avg25 = average_precision_score(Y0, Y25_score)
+
+        model.fit(X, Y50)
+        Y50_score = model.label_distributions_[:, 1]
+        p50, r50, _ = precision_recall_curve(Y0, Y50_score)
+        avg50 = average_precision_score(Y0, Y50_score)
+
         plt.figure(figsize=(8, 6))
         plt.plot(r1, p1, label=f"1% Labeled (AP={avg1:.3f})")
         plt.plot(r5, p5, label=f"5% Labeled (AP={avg5:.3f})")
         plt.plot(r10, p10, label=f"10% Labeled (AP={avg10:.3f})")
+        plt.plot(r25, p25, label=f"25% Labeled (AP={avg25:.3f})")
+        plt.plot(r50, p50, label=f"50% Labeled (AP={avg50:.3f})")
 
         plt.xlabel("Recall")
         plt.ylabel("Precision")
