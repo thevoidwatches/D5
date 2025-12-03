@@ -106,19 +106,19 @@ def prepare_data(hypothesis: dict):
     for i in range(len(Y0)):
         if i in one_per_indices:
             Y1.append(Y0[i])
+            Y5.append(Y0[i])
+            Y10.append(Y0[i])
+        else:
+            Y1.append(-1)
             if i in five_per_indices:
                 Y5.append(Y0[i])
+                Y10.append(Y0[i])
+            else:
+                Y5.append(-1)
                 if i in ten_per_indices:
                     Y10.append(Y0[i])
                 else:
                     Y10.append(-1)
-            else:
-                Y5.append(-1)
-                Y10.append(-1)
-        else:
-            Y1.append(-1)
-            Y5.append(-1)
-            Y10.append(-1)
 
     return (X, Y0, Y1, Y5, Y10)
 
