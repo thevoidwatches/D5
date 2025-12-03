@@ -136,17 +136,19 @@ if __name__ == '__main__':
         X, Y0, Y1, Y5, Y10 = prepare_data(hyp)
 #	fit the model
 #	run it
+#	plot the results
         model.fit(X, Y1)
         Y1 = model.transduction_
-        model.fit(X, Y5)
-        Y5 = model.transduction_
-        model.fit(X, Y10)
-        Y10 = model.transduction_
-#	plot the results
         p1, r1, _ = precision_recall_curve(Y0, Y1)
         avg1 = average_precision_score(Y0, Y1)
+
+        model.fit(X, Y5)
+        Y5 = model.transduction_
         p5, r5, _ = precision_recall_curve(Y0, Y5)
         avg5 = average_precision_score(Y0, Y5)
+
+        model.fit(X, Y10)
+        Y10 = model.transduction_
         p10, r10, _ = precision_recall_curve(Y0, Y10)
         avg10 = average_precision_score(Y0, Y10)
 
