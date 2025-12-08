@@ -157,51 +157,78 @@ if __name__ == '__main__':
 # create model
     model = LabelPropagation(kernel=args.kernel, gamma=args.gamma, max_iter=1000)
     for hyp in data:
+        print(f"Beginning on hypothesis: {hyp['hypothesis']}")
 # for each hypothesis in the data file
 #   prepare the data (func)
         X, Y0, Y1, Y5, Y10, Y25, Y50 = prepare_data(hyp)
+        #print(f"Data prepared for {len(Y0)} embeddings, from 1% ({len(Y0) - Y1.count(-1)}) to 50% ({len(Y0) - Y50.count(-1)})")
 #	fit the model
 #	run it
 #	plot the results
+        plt.figure(figsize=(8, 6))
+
         half_start = len(Y0) // 2
         Y0_back = Y0[half_start:]
 
-        model.fit(X, Y1)
-        Y1_score = model.label_distributions_[:, 1]
-        Y1_back = Y1_score[half_start:]
-        p1, r1, _ = precision_recall_curve(Y0_back, Y1_back)
-        avg1 = average_precision_score(Y0_back, Y1_back)
+        try:
+            print("Running model for 1%")
+            model.fit(X, Y1)
+            Y1_score = model.label_distributions_[:, 1]
+            Y1_back = Y1_score[half_start:]
+            p1, r1, _ = precision_recall_curve(Y0_back, Y1_back)
+            avg1 = average_precision_score(Y0_back, Y1_back)
+            plt.plot(r1, p1, label=f"1% Labeled (AP={avg1:.3f})")
+        except Exception as e:
+            print(f"Failed to render 1% model for hyp {hyp['hypothesis']}")
+            print(f"Error: {e}")
 
-        model.fit(X, Y5)
-        Y5_score = model.label_distributions_[:, 1]
-        Y5_back = Y5_score[half_start:]
-        p5, r5, _ = precision_recall_curve(Y0_back, Y5_back)
-        avg5 = average_precision_score(Y0_back, Y5_back)
+        try:
+            print("Running model for 5%")
+            model.fit(X, Y5)
+            Y5_score = model.label_distributions_[:, 1]
+            Y5_back = Y5_score[half_start:]
+            p5, r5, _ = precision_recall_curve(Y0_back, Y5_back)
+            avg5 = average_precision_score(Y0_back, Y5_back)
+            plt.plot(r5, p5, label=f"5% Labeled (AP={avg5:.3f})")
+        except Exception as e:
+            print(f"Failed to render 1% model for hyp {hyp['hypothesis']}")
+            print(f"Error: {e}")
 
-        model.fit(X, Y10)
-        Y10_score = model.label_distributions_[:, 1]
-        Y10_back = Y10_score[half_start:]
-        p10, r10, _ = precision_recall_curve(Y0_back, Y10_back)
-        avg10 = average_precision_score(Y0_back, Y10_back)
+        try:
+            print("Running model for 10%")
+            model.fit(X, Y10)
+            Y10_score = model.label_distributions_[:, 1]
+            Y10_back = Y10_score[half_start:]
+            p10, r10, _ = precision_recall_curve(Y0_back, Y10_back)
+            avg10 = average_precision_score(Y0_back, Y10_back)
+            plt.plot(r10, p10, label=f"10% Labeled (AP={avg10:.3f})")
+        except Exception as e:
+            print(f"Failed to render 1% model for hyp {hyp['hypothesis']}")
+            print(f"Error: {e}")
 
-        model.fit(X, Y25)
-        Y25_score = model.label_distributions_[:, 1]
-        Y25_back = Y25_score[half_start:]
-        p25, r25, _ = precision_recall_curve(Y0_back, Y25_back)
-        avg25 = average_precision_score(Y0_back, Y25_back)
+        try:
+            print("Running model for 25%")
+            model.fit(X, Y25)
+            Y25_score = model.label_distributions_[:, 1]
+            Y25_back = Y25_score[half_start:]
+            p25, r25, _ = precision_recall_curve(Y0_back, Y25_back)
+            avg25 = average_precision_score(Y0_back, Y25_back)
+            plt.plot(r25, p25, label=f"25% Labeled (AP={avg25:.3f})")
+        except Exception as e:
+            print(f"Failed to render 1% model for hyp {hyp['hypothesis']}")
+            print(f"Error: {e}")
 
-        model.fit(X, Y50)
-        Y50_score = model.label_distributions_[:, 1]
-        Y50_back = Y50_score[half_start:]
-        p50, r50, _ = precision_recall_curve(Y0_back, Y50_back)
-        avg50 = average_precision_score(Y0_back, Y50_back)
-
-        plt.figure(figsize=(8, 6))
-        plt.plot(r1, p1, label=f"1% Labeled (AP={avg1:.3f})")
-        plt.plot(r5, p5, label=f"5% Labeled (AP={avg5:.3f})")
-        plt.plot(r10, p10, label=f"10% Labeled (AP={avg10:.3f})")
-        plt.plot(r25, p25, label=f"25% Labeled (AP={avg25:.3f})")
-        plt.plot(r50, p50, label=f"50% Labeled (AP={avg50:.3f})")
+        try:
+            print("Running model for 50%")
+            model.fit(X, Y50)
+            Y50_score = model.label_distributions_[:, 1]
+            Y50_back = Y50_score[half_start:]
+            p50, r50, _ = precision_recall_curve(Y0_back, Y50_back)
+            avg50 = average_precision_score(Y0_back, Y50_back)
+            plt.plot(r50, p50, label=f"50% Labeled (AP={avg50:.3f})")
+        except Exception as e:
+            print(f"Failed to render 1% model for hyp {hyp['hypothesis']}")
+            print(f"Error: {e}")
 
         plt.xlabel("Recall")
         plt.ylabel("Precision")
@@ -212,3 +239,5 @@ if __name__ == '__main__':
         if not os.path.exists(args.outfolder):
             os.makedirs(args.outfolder)
         plt.savefig(f"{args.outfolder}/precision_recall_curves{hyp['hypothesis'][:20]}.png", dpi=300, bbox_inches="tight")
+
+        #print("Plot figures saved.")
