@@ -97,7 +97,7 @@ def prepare_data(hypothesis: dict):
     one_per_indices = set()
     # sets that will be used to track what indexes are used
     while len(fifty_per_indices) <= fifty_per_len:
-        new_index = random.randint(0, len(Y0))
+        new_index = random.randint(0, len(Y0) // 2)
         fifty_per_indices.add(new_index)
         if len(twentyfive_per_indices) <= twentyfive_per_len:
             twentyfive_per_indices.add(new_index)
@@ -163,30 +163,38 @@ if __name__ == '__main__':
 #	fit the model
 #	run it
 #	plot the results
+        half_start = len(Y0) // 2
+        Y0_back = Y0[half_start:]
+
         model.fit(X, Y1)
         Y1_score = model.label_distributions_[:, 1]
-        p1, r1, _ = precision_recall_curve(Y0, Y1_score)
-        avg1 = average_precision_score(Y0, Y1_score)
+        Y1_back = Y1_score[half_start:]
+        p1, r1, _ = precision_recall_curve(Y0_back, Y1_back)
+        avg1 = average_precision_score(Y0_back, Y1_back)
 
         model.fit(X, Y5)
         Y5_score = model.label_distributions_[:, 1]
-        p5, r5, _ = precision_recall_curve(Y0, Y5_score)
-        avg5 = average_precision_score(Y0, Y5_score)
+        Y5_back = Y5_score[half_start:]
+        p5, r5, _ = precision_recall_curve(Y0_back, Y5_back)
+        avg5 = average_precision_score(Y0_back, Y5_back)
 
         model.fit(X, Y10)
         Y10_score = model.label_distributions_[:, 1]
-        p10, r10, _ = precision_recall_curve(Y0, Y10_score)
-        avg10 = average_precision_score(Y0, Y10_score)
+        Y10_back = Y10_score[half_start:]
+        p10, r10, _ = precision_recall_curve(Y0_back, Y10_back)
+        avg10 = average_precision_score(Y0_back, Y10_back)
 
         model.fit(X, Y25)
         Y25_score = model.label_distributions_[:, 1]
-        p25, r25, _ = precision_recall_curve(Y0, Y25_score)
-        avg25 = average_precision_score(Y0, Y25_score)
+        Y25_back = Y25_score[half_start:]
+        p25, r25, _ = precision_recall_curve(Y0_back, Y25_back)
+        avg25 = average_precision_score(Y0_back, Y25_back)
 
         model.fit(X, Y50)
         Y50_score = model.label_distributions_[:, 1]
-        p50, r50, _ = precision_recall_curve(Y0, Y50_score)
-        avg50 = average_precision_score(Y0, Y50_score)
+        Y50_back = Y50_score[half_start:]
+        p50, r50, _ = precision_recall_curve(Y0_back, Y50_back)
+        avg50 = average_precision_score(Y0_back, Y50_back)
 
         plt.figure(figsize=(8, 6))
         plt.plot(r1, p1, label=f"1% Labeled (AP={avg1:.3f})")
