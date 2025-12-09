@@ -60,6 +60,12 @@ def label_propagation_parser():
         type=float,
         help='the kernel coefficient for an rbf kernel'
     )
+    parser.add_argument(
+        '--rh',
+        default=False,
+        action='store_true',
+        help='whether or not to use rh (relationship-to-hypothesis) space'
+    )
 
     return parser
 
@@ -73,15 +79,22 @@ def load_data(file: str):
         ret.append(data[entry])
     return ret
 
-def prepare_data(hypothesis: dict):
+def prepare_data(args, hypothesis: dict):
 # function to prepare the data
     X = [] # all samples
     Y0 = [] # all labels
 
+    hyp = hypothesis['hypothesis']
+
     embeds = hypothesis['embeddings']
+    hyp_embed = embeds[hyp]
     for key, value in hypothesis['sample2score'].items():
         # this builds the X array and an array of all matching labels.
-        X.append(embeds[key])
+        if args.rh:
+            key_embed = hyp_embed - embeds[key]
+        else:
+            key_embed = embeds[key]
+        X.append(key_embed)
         Y0.append(round(value))
 
     fifty_per_len = round(len(X) * 0.5)
@@ -160,7 +173,7 @@ if __name__ == '__main__':
         print(f"Beginning on hypothesis: {hyp['hypothesis']}")
 # for each hypothesis in the data file
 #   prepare the data (func)
-        X, Y0, Y1, Y5, Y10, Y25, Y50 = prepare_data(hyp)
+        X, Y0, Y1, Y5, Y10, Y25, Y50 = prepare_data(args, hyp)
         #print(f"Data prepared for {len(Y0)} embeddings, from 1% ({len(Y0) - Y1.count(-1)}) to 50% ({len(Y0) - Y50.count(-1)})")
 #	fit the model
 #	run it
@@ -232,12 +245,20 @@ if __name__ == '__main__':
 
         plt.xlabel("Recall")
         plt.ylabel("Precision")
-        plt.title(f"Precision-Recall Curves\n{hyp['hypothesis']}")
+        ptitle = f"Precision-Recall Curves ({args.kernel})"
+        if args.rh:
+            ptitle += " (RH space)"
+        ptitle += f"\n{hyp['hypothesis']}"
+        plt.title(ptitle)
         plt.legend()
         plt.grid(True)
 
+        filename = f"precision_recall_curves_{args.kernel}"
+        if args.rh:
+            filename += "_rh"
+        filename += f"_{hyp['hypothesis'][:20]}"
         if not os.path.exists(args.outfolder):
             os.makedirs(args.outfolder)
-        plt.savefig(f"{args.outfolder}/precision_recall_curves{hyp['hypothesis'][:20]}.png", dpi=300, bbox_inches="tight")
+        plt.savefig(f"{args.outfolder}/{filename}.png", dpi=300, bbox_inches="tight")
 
         #print("Plot figures saved.")
